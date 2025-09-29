@@ -1,7 +1,11 @@
 [build]
-    # Set a dummy folder for the static site content (we don't have any)
-    publish = "public" 
+  # CRITICAL: This command installs the 'airtable' package 
+  # needed by your get-data.js function.
+  command = "npm install"
+  
+  # Set a dummy folder for the static site content (we don't have any)
+  publish = "public" 
 
 [functions]
-    # Tell Netlify to look for function files here
-    directory = "netlify/functions"
+  # Tell Netlify to look for function files here
+  directory = "netlify/functions"
