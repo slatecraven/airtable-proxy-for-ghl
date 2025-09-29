@@ -1,0 +1,7 @@
+[build]
+    # Set a dummy folder for the static site content (we don't have any)
+    publish = "public" 
+
+[functions]
+    # Tell Netlify to look for function files here
+    directory = "netlify/functions"
