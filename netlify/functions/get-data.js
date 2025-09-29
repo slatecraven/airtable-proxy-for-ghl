@@ -1,47 +1,61 @@
-// The Airtable dependency is installed automatically by Netlify because of package.json
+// =========================================================================
+// get-data.js - Netlify Function with CORS Fix
+// =========================================================================
+
 const Airtable = require('airtable');
 
-// The main handler function Netlify runs
+// Initialize Airtable using environment variables set in Netlify
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+const tableName = process.env.AIRTABLE_TABLE_ID; 
+
+// --- CORS HEADERS ---
+// It is safer to use the exact domain of the app making the request (e.g., GoHighLevel)
+// If you are unsure of the exact domain or sub-domain, '*' is a quick fix, but less secure.
+const HEADERS = {
+    // 💡 BEST PRACTICE: Use the specific domain that is loading this widget/code. 
+    // Example: 'https://app.gohighlevel.com' or 'https://yourclientdomain.com'
+    'Access-Control-Allow-Origin': '*', 
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+};
+// --------------------
+
 exports.handler = async (event, context) => {
-    try {
-        // Use environment variables (the SECRET keys you set in Netlify)
-        const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
-            .base(process.env.AIRTABLE_BASE_ID);
 
-        // Fetch records from your specific table
-        const records = await base('tblcOQyuXLYWTAfs9') 
-            .select({
-                // Add your filtering or sorting options here
-                filterByFormula: "{ShowOnWebsite} = 'Yes'", 
-                // Only request the fields you need
-                fields: ["Name", "Rate", "Bio"],
-                maxRecords: 50 
-            })
-            .firstPage();
-
-        // Map and clean the data before sending it back
-        const cleanData = records.map(record => ({
-            id: record.id,
-            name: record.get('Name'),
-            rate: record.get('Rate')
-        }));
-
-        // Send a successful response (status 200) with the data
+    // 1. Handle preflight OPTIONS request (required by CORS)
+    if (event.httpMethod === 'OPTIONS') {
         return {
             statusCode: 200,
-            body: JSON.stringify(cleanData),
-            headers: {
-                // Allows your GHL page (or any domain) to call this endpoint
-                'Access-Control-Allow-Origin': '*', 
-                'Content-Type': 'application/json'
-            }
+            headers: HEADERS,
+            body: '',
+        };
+    }
+    
+    // 2. Handle actual GET request
+    try {
+        const records = await base(tableName).select({
+            // Ensure you are requesting the fields required by your frontend code
+            // Optionally, add filtering or sorting here if needed
+        }).all();
+
+        return {
+            statusCode: 200,
+            headers: HEADERS, // Include CORS headers in the successful response
+            body: JSON.stringify({ 
+                records: records 
+            }),
         };
 
     } catch (error) {
-        console.error("Function Error:", error);
+        console.error('Airtable Error:', error.message);
+
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Failed to access the database.' }),
+            headers: HEADERS, // Include CORS headers even on error
+            body: JSON.stringify({ 
+                error: 'Failed to fetch data from Airtable.', 
+                details: error.message 
+            }),
         };
     }
 };
