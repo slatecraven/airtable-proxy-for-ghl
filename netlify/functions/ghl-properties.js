@@ -3,13 +3,22 @@ const LOCATION_ID = process.env.GHL_LOCATION_ID;
 const ACCESS_TOKEN = process.env.GHL_ACCESS_TOKEN;
 
 exports.handler = async (event) => {
+  // Log incoming request for debugging
+  console.log('📥 Incoming request:', {
+    queryString: event.queryStringParameters,
+    LOCATION_ID: LOCATION_ID ? '✅ Set' : '❌ Missing',
+    ACCESS_TOKEN: ACCESS_TOKEN ? '✅ Set' : '❌ Missing'
+  });
+
   // Validate environment variables
   if (!LOCATION_ID || !ACCESS_TOKEN) {
-    console.error('❌ Missing GHL_LOCATION_ID or GHL_ACCESS_TOKEN');
+    console.error('❌ GHL credentials missing in environment variables');
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: 'Server misconfigured: missing GHL credentials' })
+      body: JSON.stringify({
+        error: 'Server misconfigured: Missing GHL_LOCATION_ID or GHL_ACCESS_TOKEN'
+      })
     };
   }
 
@@ -19,37 +28,45 @@ exports.handler = async (event) => {
 
   const url = new URL('https://services.leadconnectorhq.com/custom/objects');
   url.searchParams.append('locationId', LOCATION_ID);
-  url.searchParams.append('objectType', 'Property');
+  url.searchParams.append('objectType', 'Property'); // ← Must match your Custom Object name exactly
   url.searchParams.append('limit', limit);
   url.searchParams.append('offset', offset);
 
+  console.log('📡 Fetching from GHL API:', url.toString());
+
   try {
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${ACCESS_TOKEN}`,
         'Accept': 'application/json'
       }
     });
 
-    // ✅ Read body ONCE
-    const responseBody = await response.text(); // ← Read as text first
+    // Read response ONCE as text
+    const responseBody = await response.text();
+    console.log('📄 GHL Raw Response Status:', response.status);
+    console.log('📄 GHL Raw Response (first 300 chars):', responseBody.substring(0, 300));
 
-    // Attempt to parse as JSON
+    // Parse JSON safely
     let data;
     try {
       data = JSON.parse(responseBody);
     } catch (parseError) {
-      console.error('GHL returned non-JSON response:', responseBody);
+      console.error('💥 Non-JSON response from GHL:', responseBody);
       return {
         statusCode: 502,
         headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'Invalid response from GHL API (not JSON)' })
+        body: JSON.stringify({
+          error: 'GHL returned invalid JSON',
+          rawResponsePreview: responseBody.substring(0, 500)
+        })
       };
     }
 
-    // Handle GHL API errors (e.g., 401, 400)
+    // Handle GHL API errors (4xx/5xx)
     if (!response.ok) {
-      console.error('GHL API error response:', data);
+      console.error('⚠️ GHL API error response:', data);
       return {
         statusCode: response.status,
         headers: { 'Access-Control-Allow-Origin': '*' },
@@ -61,7 +78,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // ✅ Success: return data with CORS header
+    // Success!
+    console.log('✅ Successfully fetched', data.records?.length || 0, 'records');
     return {
       statusCode: 200,
       headers: {
@@ -72,7 +90,7 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Netlify Function error:', error);
+    console.error('🔥 Netlify Function runtime error:', error);
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
