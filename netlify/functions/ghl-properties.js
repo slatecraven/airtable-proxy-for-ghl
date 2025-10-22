@@ -31,7 +31,7 @@ exports.handler = async (event) => {
     pageLimit: pageLimit,
     filters: [
       {
-        field: 'active_listing',
+        field: 'properties.active_listing',
         operator: 'contains',
         value: 'yes'
       }
