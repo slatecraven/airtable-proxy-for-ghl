@@ -28,18 +28,23 @@ exports.handler = async (event) => {
   const body = {
     locationId: LOCATION_ID,
     page: pageInt,
-    pageLimit: pageLimit
+    pageLimit: pageLimit,
+    filters: [
+      {
+        field: 'active_listing',
+        operator: 'eq',
+        value: 'yes'
+      }
+    ]
   };
 
   // Add category filter if provided
   if (category) {
-    body.filters = [
-      {
-        field: 'category',
-        operator: 'eq',
-        value: category
-      }
-    ];
+    body.filters.push({
+      field: 'category',
+      operator: 'eq',
+      value: category
+    });
   }
 
   const url = 'https://services.leadconnectorhq.com/objects/custom_objects.properties/records/search';
