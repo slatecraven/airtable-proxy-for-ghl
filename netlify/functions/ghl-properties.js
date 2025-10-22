@@ -33,7 +33,7 @@ exports.handler = async (event) => {
       // Always require active_list = ["yes"]
       {
         field: 'show_list',
-        operator: 'in',
+        operator: 'eq',
         value: 'yes'
       }
     ]
