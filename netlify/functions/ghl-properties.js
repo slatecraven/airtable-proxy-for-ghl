@@ -32,7 +32,7 @@ exports.handler = async (event) => {
     filters: [
       {
         field: 'properties.active_listing',
-        operator: 'contains',
+        operator: 'eq',
         value: 'yes'
       }
     ]
