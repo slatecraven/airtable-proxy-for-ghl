@@ -24,26 +24,28 @@ exports.handler = async (event) => {
   const pageInt = Math.max(parseInt(page, 10) || 1, 1);
   const pageLimit = Math.min(Math.max(parseInt(perPage, 10) || 4, 1), 100);
 
-  // Build request body
   const body = {
     locationId: LOCATION_ID,
     page: pageInt,
-    pageLimit: pageLimit
+    pageLimit: pageLimit,
+    filters: [
+      {
+        field: 'show_list',
+        operator: 'eq',
+        value: 'yes'
+      }
+    ]
   };
 
-  // Add category filter if provided
   if (category) {
-    body.filters = [
-      {
-        field: 'category',
-        operator: 'eq',
-        value: category
-      }
-    ];
+    body.filters.push({
+      field: 'category',
+      operator: 'eq',
+      value: category
+    });
   }
 
   const url = 'https://services.leadconnectorhq.com/objects/custom_objects.properties/records/search';
-
   console.log('📡 Fetching from GHL Objects API:', { url, body });
 
   try {
@@ -90,7 +92,7 @@ exports.handler = async (event) => {
       };
     }
 
-    console.log('✅ Fetched', (data.records || []).length, 'records');
+    console.log('✅ Fetched', (data.records || []).length, 'active property records');
     return {
       statusCode: 200,
       headers: {
@@ -99,7 +101,6 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify(data)
     };
-
   } catch (error) {
     console.error('🔥 Function error:', error);
     return {
