@@ -31,11 +31,11 @@ exports.handler = async (event) => {
     pageLimit: pageLimit,
     filters: [
       // Always require active_list = ["yes"]
-      {
-        field: 'show_list',
-        operator: 'eq',
-        value: 'yes'
-      }
+     {
+      field: 'active_list',
+      operator: 'in',
+      value: ['yes']
+     }
     ]
   };
 
